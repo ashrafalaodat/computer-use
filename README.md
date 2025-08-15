@@ -7,6 +7,8 @@ A fully functional implementation of a GUI-enabled FastAPI backend, containerize
 ## Demo
 <a href="demo/engent-ai.webm">demo/engent-ai.webm</a>
 
+## Codebase Overview
+<a href="demo/codebase-overview.mov">demo/codebase-overview.mov</a>
 
 ## Highlights
 - __FastAPI backend__ with session + task execution APIs in `legent-ai/`.
