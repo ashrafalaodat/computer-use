@@ -120,3 +120,7 @@ In development:
 ## Security Notes
 - Do not commit real API keys. Use `.env` files locally and secret managers in production.
 - The app will read `.env` in dev; in prod provide envs via orchestrator or `--env-file .env.prod`.
+
+## Notes
+- __File Management__: The file management tool is currently is just a placeholder for the actual file management tool; it is not yet implemented.
+- __Search__: The search tool is currently is just a placeholder for the actual search tool; it is not yet implemented. 
