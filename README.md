@@ -5,12 +5,8 @@ Author: Ashraf Al-Aodat
 A fully functional implementation of a GUI-enabled FastAPI backend, containerized with a complete virtual desktop (Xvfb + Mutter + tint2), VNC, and browser-based access via noVNC. The app enables desktop automation and screenshot capture inside the container and exposes an API and static frontend.
 
 ## Demo
+<a href="demo/engent-ai.webm">demo/engent-ai.webm</a>
 
-<video controls preload="metadata" width="100%" style="max-width: 960px; display:block; margin: 0.75rem 0;">
-  <source src="demo/engent-ai.webm" type="video/webm" />
-  Your browser does not support the HTML5 video tag. You can download and watch the demo here:
-  <a href="demo/engent-ai.webm">demo/engent-ai.webm</a>
-</video>
 
 ## Highlights
 - __FastAPI backend__ with session + task execution APIs in `legent-ai/`.
