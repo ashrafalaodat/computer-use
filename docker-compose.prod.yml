@@ -1,0 +1,27 @@
+services:
+  backend:
+    image: ai-backend:latest
+    container_name: ai-backend
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      DISPLAY_NUM: ${DISPLAY_NUM:-1}
+      WIDTH: ${WIDTH:-1440}
+      HEIGHT: ${HEIGHT:-900}
+      TZ: ${TZ:-UTC}
+    ports:
+      - "8000:8000"
+      - "6080:6080"
+    restart: always
+    shm_size: 2gb
+    # No bind mounts in prod; optional named volume for screenshots persistence
+    volumes:
+      - screenshots_data:/app/legent-ai/static/screenshots
+
+volumes:
+  screenshots_data:
+    driver: local
+
+# Deploy:
+#   export ANTHROPIC_API_KEY=...  # and any overrides
+#   docker build -f legent-ai/image/Dockerfile -t ai-backend:latest .
+#   docker compose -f docker-compose.prod.yml up -d

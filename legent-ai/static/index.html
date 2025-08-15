@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Legent AI — Computer Use Demo</title>
+  <style>
+    :root{--bg:#f4f6f8;--panel:#ffffff;--muted:#eef1f4;--border:#e2e8f0;--text:#0f172a;--text-muted:#475569;--primary:#4f8cff;--primary-600:#3b7af0;--danger:#ef4444;--radius:14px;--shadow:0 8px 24px rgba(2,6,23,.06);}
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;}
+    .app{display:grid;grid-template-columns:280px 1fr 360px;gap:16px;height:100vh;padding:16px;}
+
+    /* LEFT: Sessions */
+    .sidebar{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;position:relative}
+    .sidebar .search{padding:12px;border-bottom:1px solid var(--border);} 
+    .sidebar .search input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--muted);outline:none;transition:border-color .15s, box-shadow .15s}
+    .sidebar .search input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,140,255,.15);background:#fff}
+    .sidebar .section-title{padding:10px 14px;color:var(--text-muted);font-weight:600}
+    .task-list{flex:1;overflow:auto;padding:0 6px}
+    .task{display:flex;align-items:center;gap:10px;padding:10px 8px;margin:6px;border-radius:10px;border:1px solid var(--border);background:#fff;cursor:pointer;transition:background .15s, box-shadow .15s}
+    .task:hover{background:var(--muted);box-shadow:0 2px 8px rgba(2,6,23,.05)}
+    .task.active{background:#eaf2ff;border-color:#cfe0ff}
+    .btn-new{margin-top:auto;margin:12px;border-top:1px solid var(--border);padding:16px}
+    .btn-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+    /* CENTER: VNC area */
+    .center{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+    .center .titlebar{display:flex;align-items:center;justify-content:center;position:relative;padding:10px 14px;border-bottom:1px solid var(--border);} 
+    .center .titlebar h1{margin:0;font-size:18px;font-weight:700}
+    .center .controls{position:absolute;right:12px;display:flex;gap:8px}
+    .btn{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:var(--muted);font-weight:600;cursor:pointer;transition:background .15s, transform .05s}
+    .btn:active{transform:translateY(1px)}
+    .btn.primary{background:var(--primary);color:#fff;border-color:transparent}
+    .btn.primary:hover{background:var(--primary-600)}
+    .btn.danger{background:#fee2e2;color:#b91c1c;border-color:#fecaca}
+    .btn.icon{width:100%;height:56px;padding:0;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1}
+    .workspace{flex:1;background:#0b1b2b;display:flex;flex-direction:column;align-items:center;justify-content:center}
+    .screen{width:92%;height:92%;background:#0d2236;border-radius:10px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);position:relative;overflow:hidden}
+    .screen::after{content:"workspace 1";position:absolute;left:8px;bottom:6px;color:#cbd5e1;font-size:12px;opacity:.8}
+    .screen iframe{width:100%;height:100%;border:0;background:#0d2236}
+
+    .progress-container{width:92%;margin:8px auto 0;display:none}
+    #progress-bar{width:0%;height:8px;background:var(--primary);border-radius:4px;transition:width .2s}
+    #progress-label{font-size:12px;color:var(--text-muted);text-align:center;margin-top:4px}
+
+    /* RIGHT: Chat */
+    .right{display:grid;grid-template-rows:1fr 170px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;min-height:0}
+    .chat{display:flex;flex-direction:column;min-height:0}
+    .chat .header{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border)}
+    .chat .header .bot{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#8ab6ff,#a0f0ff)}
+    .chat .messages{flex:1;overflow:auto;padding:10px 14px;display:flex;flex-direction:column;gap:10px}
+    .bubble{max-width:85%;padding:10px 12px;border-radius:12px;background:var(--muted)}
+    .bubble.me{align-self:flex-end;background:#e0f2fe}
+    .bubble.agent-activity{background:#f1f5f9;border:1px solid #e2e8f0;font-size:13px;color:#475569;line-height:1.3}
+    .bubble.agent-activity strong{color:var(--text)}
+    .bubble.agent-activity pre{white-space:pre-wrap;word-wrap:break-word;background:#e2e8f0;padding:6px 8px;border-radius:6px;margin-top:4px;}
+    .composer{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--border)}
+    .composer input{flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:#fff}
+    .composer button{padding:10px 14px;border-radius:10px;border:1px solid transparent;background:var(--primary);color:#fff;font-weight:700;cursor:pointer}
+    
+    .config-panel{padding:12px;border-top:1px solid var(--border);background:#fafcfd;}
+    .config-panel h4{margin:0 0 10px;font-size:14px;}
+    .form-group{margin-bottom:8px;}
+    .form-group label{display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text-muted)}
+    .form-group input, .form-group textarea{width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);}
+    .form-group textarea{resize:vertical;min-height:60px;}
+    .files{border-top:1px solid var(--border);padding:12px;display:flex;align-items:center;justify-content:center;background:#fafafa}
+    .drop{width:100%;height:100%;border:2px dashed #cbd5e1;border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);text-align:center;padding:12px}
+
+    @media (max-width: 1100px){.app{grid-template-columns:1fr;grid-auto-rows:minmax(250px,auto)}.sidebar,.right{height:50vh}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- LEFT: Sessions -->
+    <aside class="sidebar">
+      <div class="search"><input placeholder="Search" /></div>
+      <div class="section-title">Sessions</div>
+      <div id="sessions-list" class="task-list"></div>
+      <div class="btn-new">
+        <div class="btn-row">
+          <button class="btn primary icon" id="new-session-btn" title="New session">+</button>
+          <button class="btn danger icon" id="delete-session-btn" title="Delete session">-</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER: VNC / Workspace -->
+    <main class="center">
+      <div class="titlebar">
+        <h1 id="session-title">Legent AI</h1>
+        <div class="controls"></div>
+      </div>
+      <div class="workspace">
+        <div class="screen">
+          <iframe title="VNC" src="http://127.0.0.1:6080/vnc.html?&resize=scale&autoconnect=1&view_only=1&reconnect=1&reconnect_delay=2000"></iframe>
+        </div>
+      </div>
+      <div class="progress-container" id="progress-container">
+        <div id="progress-bar"></div>
+        <div id="progress-label">Ready</div>
+      </div>
+    </main>
+
+    <!-- RIGHT: Assistant / Config Tabs + Files -->
+    <section class="right">
+      <div class="chat">
+        <div class="header" style="justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="bot"></div>
+            <strong>Agent</strong>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn" id="tab-assistant">Assistant</button>
+            <button class="btn" id="tab-config">Config</button>
+          </div>
+        </div>
+
+        <!-- Assistant Tab Content -->
+        <div id="tab-assistant-view" style="display:flex; flex-direction:column; min-height:0; flex:1;">
+          <div id="messages" class="messages"></div>
+          <div class="composer">
+            <input type="text" id="message-input" placeholder="Enter your message..." />
+            <button id="send-button">Send</button>
+          </div>
+        </div>
+
+        <!-- Config Tab Content -->
+        <div id="tab-config-view" style="display:none">
+          <div class="config-panel">
+            <h4>Agent Configuration</h4>
+            <div class="form-group">
+              <label for="config-model">Model</label>
+              <input id="config-model" placeholder="claude-3-5-sonnet-20241022" />
+            </div>
+            <div class="form-group">
+              <label for="config-tool-version">Tool Version</label>
+              <select id="config-tool-version">
+                <option value="computer_use_20250124">computer_use_20250124</option>
+                <option value="computer_use_20241022">computer_use_20241022</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="config-max-tokens">Max Tokens</label>
+              <input id="config-max-tokens" type="number" min="1" value="4096" />
+            </div>
+            <div class="form-group">
+              <label for="config-system-suffix">System Prompt Suffix</label>
+              <textarea id="config-system-suffix" placeholder="Additional instructions..."></textarea>
+            </div>
+            <div class="form-group" style="display:flex;align-items:center;gap:8px">
+              <input type="checkbox" id="config-show-screenshots" checked />
+              <label for="config-show-screenshots" style="margin:0">Show screenshots in chat</label>
+            </div>
+            <div>
+              <button class="btn primary" id="config-save">Save Config</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="files">
+        <div class="drop">Drag and drop a single file here or click to select a file</div>
+      </div>
+    </section>
+  </div>
+
+  <script src="/static/index.js"></script>
+</body>
+</html>

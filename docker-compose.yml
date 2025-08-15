@@ -1,0 +1,35 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: legent-ai/image/Dockerfile
+    image: ai-backend:latest
+    container_name: ai-backend-dev
+    environment:
+      # supply from host env or defaults
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      DISPLAY_NUM: ${DISPLAY_NUM:-1}
+      WIDTH: ${WIDTH:-1440}
+      HEIGHT: ${HEIGHT:-900}
+      TZ: ${TZ:-UTC}
+    ports:
+      - "8000:8000"   # FastAPI API
+      - "6080:6080"   # noVNC
+    restart: unless-stopped
+    shm_size: 2gb
+    # Mount code and .env to iterate on UI/screenshots while running
+    volumes:
+      - ./legent-ai:/app/legent-ai:rw
+      - ./.env:/app/.env:ro
+      - screenshots_dev:/app/legent-ai/static/screenshots
+    # Helpful labels
+    labels:
+      - "traefik.enable=false"
+
+# Named volumes
+volumes:
+  screenshots_dev:
+
+# Usage:
+#   export ANTHROPIC_API_KEY=...  # and any overrides
+#   docker compose up --build
