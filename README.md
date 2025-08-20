@@ -43,6 +43,33 @@ A fully functional implementation of a GUI-enabled FastAPI backend, containerize
 - Docker and Docker Compose
 - An Anthropic API key (for `ANTHROPIC_API_KEY`)
 
+## Development Setup
+1. Clone and enter the repo
+   ```bash
+   git clone <this-repo-url>
+   cd ai
+   ```
+2. Create `.env` with at least
+   ```env
+   ANTHROPIC_API_KEY=your-dev-key
+   DISPLAY_NUM=1
+   WIDTH=1440
+   HEIGHT=900
+   TZ=UTC
+   LOG_LEVEL=debug
+   ```
+3. Start the dev stack (builds and runs)
+   ```bash
+   make up
+   # or: docker compose up --build
+   ```
+4. Access
+   - API: `http://localhost:8000`
+   - UI: `http://localhost:8000/` (serves `legent-ai/static/index.html`)
+   - noVNC: `http://localhost:6080/vnc.html`
+
+Troubleshooting tips are in the section below.
+
 ## Quick Start (Development)
 1. Populate `./.env`:
    ```env
@@ -92,6 +119,80 @@ Run `make` with no args to see help.
 - `make prod-down` — Stop prod stack
 - `make prod-logs` — Tail prod logs
 
+## API Reference
+
+Base URL (dev): `http://localhost:8000`
+
+- __GET `/`__
+  - Serves `index.html` from `legent-ai/static/`.
+
+- __Static__
+  - GET `/static/...` serves assets under `legent-ai/static/`.
+
+- __POST `/api/sessions`__ → Create session
+  - Request:
+    ```json
+    { "title": "My Session" }
+    ```
+  - Response: `SessionResponse` (id, title, status, timestamps, message_count, metadata, config)
+
+- __GET `/api/sessions`__ → List sessions
+  - Query: `limit`, `offset`
+
+- __GET `/api/sessions/{session_id}`__ → Get session
+
+- __PUT `/api/sessions/{session_id}`__ → Update session
+  - Request:
+    ```json
+    { "title": "Renamed Title", "status": "active" }
+    ```
+
+- __DELETE `/api/sessions/{session_id}`__ → Delete session
+
+- __GET `/api/sessions/{session_id}/config`__ → Get agent config
+  - Creates a default config if missing.
+
+- __PUT `/api/sessions/{session_id}/config`__ → Update agent config
+  - Request (example):
+    ```json
+    {
+      "model": "claude-3-7-sonnet-20250219",
+      "provider": "anthropic",
+      "tool_version": "v1",
+      "max_tokens": 2048,
+      "thinking_budget": 2048,
+      "token_efficient_tools_beta": true,
+      "system_prompt_suffix": ""
+    }
+    ```
+
+- __POST `/api/sessions/{session_id}/messages`__ → Add user message
+  - Request:
+    ```json
+    { "content": "Hello" }
+    ```
+
+- __GET `/api/sessions/{session_id}/messages`__ → List messages
+  - Query: `limit`, `offset`
+
+- __POST `/api/tasks/execute`__ → Start async task (agent loop)
+  - Request (`TaskRequest`):
+    ```json
+    {
+      "session_id": "<session-id>",
+      "task_description": "Open a browser and search for cats"
+    }
+    ```
+  - Response:
+    ```json
+    { "task_id": "<uuid>", "status": "started" }
+    ```
+
+- __WebSocket `/ws/{session_id}`__ → Real-time updates
+  - The server broadcasts messages whenever new content is persisted.
+
+noVNC (browser VNC): `http://localhost:6080/vnc.html`
+
 ## Environment Variables
 - `ANTHROPIC_API_KEY` — required
 - `DISPLAY_NUM` — virtual display number; default 1
@@ -120,6 +221,38 @@ In development:
 ## Security Notes
 - Do not commit real API keys. Use `.env` files locally and secret managers in production.
 - The app will read `.env` in dev; in prod provide envs via orchestrator or `--env-file .env.prod`.
+
+## Sequence Diagram
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant B as Browser (UI)
+    participant N as noVNC (6080)
+    participant F as FastAPI (8000)
+    participant S as Services (Session/Task/Config)
+
+    Note over B: User opens UI (/) and connects WS
+    B->>F: GET /
+    F-->>B: index.html + static assets
+    B->>F: WS /ws/{session_id}
+    F-->>B: 101 Switching Protocols
+
+    Note over B,N: User opens embedded VNC
+    B->>N: GET /vnc.html
+    N-->>B: noVNC app
+    B->>N: WS /websockify (proxied to x11vnc:5900)
+    N-->>B: 101 Switching Protocols
+
+    Note over B,F,S: User sends a task
+    B->>F: POST /api/tasks/execute { session_id, task_description }
+    F->>S: TaskExecutionService.execute_task()
+    activate S
+    S->>S: sampling_loop (tools, screenshots)
+    S-->>F: persist messages
+    F-->>B: WS push (new messages)
+    deactivate S
+```
 
 ## Notes
 - __File Management__: The file management tool is currently is just a placeholder for the actual file management tool; it is not yet implemented.
