@@ -238,14 +238,14 @@ sequenceDiagram
     B->>F: WS /ws/{session_id}
     F-->>B: 101 Switching Protocols
 
-    Note over B,N: User opens embedded VNC
+    Note over B: User opens embedded VNC
     B->>N: GET /vnc.html
     N-->>B: noVNC app
     B->>N: WS /websockify (proxied to x11vnc:5900)
     N-->>B: 101 Switching Protocols
 
-    Note over B,F,S: User sends a task
-    B->>F: POST /api/tasks/execute { session_id, task_description }
+    Note over B: User sends a task
+    B->>F: POST /api/tasks/execute (session_id, task_description)
     F->>S: TaskExecutionService.execute_task()
     activate S
     S->>S: sampling_loop (tools, screenshots)
